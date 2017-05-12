@@ -5,8 +5,11 @@ XEngine was extracted as a separate project from LESh project.
 Contains "standard" PHP library, auxillary functions, drop-in replacements
 for unsafe PHP methods.
 
-Used in several projects, including lesh-dev family (lesh.org.ru, fizlesh.ru),
-financial equalizer, DMVN and others.
+Used in several projects:
+
+* https://bitbucket.org/dichlofos/financial-equalizer
+* https://github.com/lesh-dev/core
+and will be used in many others.
 
 Development
 ===========
