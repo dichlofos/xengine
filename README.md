@@ -5,8 +5,11 @@ XEngine was extracted as a separate project from LESh project.
 Contains "standard" PHP library, auxillary functions, drop-in replacements
 for unsafe PHP methods.
 
-Used in several projects, including lesh-dev family (lesh.org.ru, fizlesh.ru),
-financial equalizer, DMVN and others.
+Used in several projects:
+
+* https://bitbucket.org/dichlofos/financial-equalizer
+* https://github.com/lesh-dev/core
+and will be used in many others.
 
 Development
 ===========
@@ -32,6 +35,7 @@ Contrib components
 Authors and Contributors
 ========================
 Alexander Trousevitch <trousev@yandex.ru>
+
 * Initial XCMS engine design
 * Initial Contest design
 * Deploy system
@@ -39,6 +43,7 @@ Alexander Trousevitch <trousev@yandex.ru>
 * Hosting support, RedMine administration
 
 Mikhail Veltishchev <dichlofos-mv@yandex.ru>, https://github/dichlofos
+
 * Project administration and management
 * Major XEngine enhancements and maintenance
 * Database engine
