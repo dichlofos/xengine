@@ -9,7 +9,16 @@ Used in several projects:
 
 * https://bitbucket.org/dichlofos/financial-equalizer
 * https://github.com/lesh-dev/core
+
 and will be used in many others.
+
+Logo and History
+================
+
+1. An *X* means *anything*. This library contains everything you need.
+2. All XEngine code born during crutch-based development. That's why two crossed crutches is our logo.
+
+Please note we really don't like crutches. This library helps you not to produce crutches in buisness logic.
 
 Development
 ===========
@@ -34,17 +43,13 @@ Contrib components
 
 Authors and Contributors
 ========================
-Alexander Trousevitch <trousev@yandex.ru>
-
-* Initial XCMS engine design
-* Initial Contest design
-* Deploy system
-* Project administration
-* Hosting support, RedMine administration
-
 Mikhail Veltishchev <dichlofos-mv@yandex.ru>, https://github/dichlofos
 
 * Project administration and management
 * Major XEngine enhancements and maintenance
 * Database engine
 * Mailer and notifications
+
+Alexander Trousevitch <trousev@yandex.ru>
+
+* Initial XCMS engine design
