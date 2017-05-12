@@ -19,6 +19,7 @@ adding add new methods/classes with different signature.
 
 Components
 ==========
+
 * String unicode-aware utilities (convenient wrappers around mbstring)
 * Database engine
 * Mailer subsystem
@@ -32,6 +33,7 @@ Contrib components
 Authors and Contributors
 ========================
 Alexander Trousevitch <trousev@yandex.ru>
+
 * Initial XCMS engine design
 * Initial Contest design
 * Deploy system
@@ -39,6 +41,7 @@ Alexander Trousevitch <trousev@yandex.ru>
 * Hosting support, RedMine administration
 
 Mikhail Veltishchev <dichlofos-mv@yandex.ru>, https://github/dichlofos
+
 * Project administration and management
 * Major XEngine enhancements and maintenance
 * Database engine
