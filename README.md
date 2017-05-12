@@ -43,17 +43,13 @@ Contrib components
 
 Authors and Contributors
 ========================
-Alexander Trousevitch <trousev@yandex.ru>
-
-* Initial XCMS engine design
-* Initial Contest design
-* Deploy system
-* Project administration
-* Hosting support, RedMine administration
-
 Mikhail Veltishchev <dichlofos-mv@yandex.ru>, https://github/dichlofos
 
 * Project administration and management
 * Major XEngine enhancements and maintenance
 * Database engine
 * Mailer and notifications
+
+Alexander Trousevitch <trousev@yandex.ru>
+
+* Initial XCMS engine design
