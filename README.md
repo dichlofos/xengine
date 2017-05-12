@@ -14,10 +14,11 @@ and will be used in many others.
 
 Logo and History
 ================
-1. An 'X' means 'anything'. This library contains everything you need.
+
+1. An *X* means *anything*. This library contains everything you need.
 2. All XEngine code born during crutch-based development. That's why two crossed crutches is our logo.
 
- to become  and crutch
+Please note we really don't like crutches. This library helps you not to produce crutches in buisness logic.
 
 Development
 ===========
