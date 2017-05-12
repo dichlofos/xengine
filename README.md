@@ -19,7 +19,6 @@ adding add new methods/classes with different signature.
 
 Components
 ==========
-
 * String unicode-aware utilities (convenient wrappers around mbstring)
 * Database engine
 * Mailer subsystem
