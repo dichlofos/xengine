@@ -34,6 +34,7 @@ function xcms_href($args_list)
 function xcms_hostname()
 {
     global $meta_site_url;
+    $host = "";
     if ($meta_site_url)
         $host = preg_replace('#http(s|)://(.*?)(/|$)#', '\2', $meta_site_url);
 
