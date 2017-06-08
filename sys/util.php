@@ -190,6 +190,10 @@ function xcms_util_unit_test()
     $meta_site_url = "http://test.fizlesh.ru";
     xut_equal(xcms_hostname(), "test.fizlesh.ru", "xcms_hostname does not work");
 
+    // xcms_hostname should work even without site metadata
+    unset($meta_site_url);
+    xut_check(xu_not_empty(xcms_hostname()), "xcms_hostname gives empty string");
+
     for ($i = 0; $i < 100; ++$i)
     {
         $passwd = xcms_mkpasswd();
