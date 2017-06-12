@@ -3,7 +3,7 @@
   * TODO: Add pageid regex checking for safety
   **/
 
-require_once("${engine_dir}sys/string.php");
+require_once("${xengine_dir}sys/string.php");
 
 /**
   * Retrieve page info location
@@ -83,12 +83,12 @@ function xcms_get_page_content_name($page_id)
 function xcms_get_page_template_name($name)
 {
     global $SETTINGS;
-    return "{$SETTINGS["engine_dir"]}cms/content/$name.template";
+    return "{$SETTINGS["xengine_dir"]}cms/content/$name.template";
 }
 
 function xcms_get_page_templates()
 {
-    $prefix = "{$SETTINGS["engine_dir"]}cms/content/";
+    $prefix = "{$SETTINGS["xengine_dir"]}cms/content/";
     $ext = ".template";
     $list = glob("$prefix*$ext");
     $name_list = array();

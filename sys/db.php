@@ -4,8 +4,8 @@
   * @author Mikhail Veltishchev <dichlofos-mv@yandex.ru>
   * Database management module
   **/
-require_once("${engine_dir}sys/string.php");
-require_once("${engine_dir}sys/auth.php");
+require_once("${xengine_dir}sys/string.php");
+require_once("${xengine_dir}sys/auth.php");
 
 define('XDB_NEW', 'new');
 define('XDB_APPROVED_NEW', 'approved_new');

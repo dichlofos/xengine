@@ -1,5 +1,5 @@
 <?php
-    include_once("$engine_dir/sys/tag.php");
+    include_once("$xengine_dir/sys/tag.php");
 
     /**
      * A-la registry API (for settings, etc)

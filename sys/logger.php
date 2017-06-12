@@ -26,8 +26,8 @@
         XLOG_DEBUG => 'DEBUG',
     );
 
-    require_once("${engine_dir}sys/file.php");
-    require_once("${engine_dir}sys/util.php");
+    require_once("${xengine_dir}sys/file.php");
+    require_once("${xengine_dir}sys/util.php");
 
     /**
       * Get a log file name
@@ -39,8 +39,8 @@
         $log_path = $meta_site_log_path;
         if (!strlen($log_path))
         {
-            global $engine_dir;
-            $ed = strlen($engine_dir) ? $engine_dir : "engine";
+            global $xengine_dir;
+            $ed = strlen($xengine_dir) ? $xengine_dir : "engine";
             $log_path = "$ed/../engine.log";
         }
         return $log_path;
