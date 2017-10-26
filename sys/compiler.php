@@ -72,7 +72,7 @@ function xcms_parse_string($s, $output_stream)
     $argv = explode(EXP_SP, $code);
 
     $name = $argv[0];
-    $elem_full_name = $SETTINGS["xengine_dir"].$name;
+    $elem_full_name = $SETTINGS["engine_dir"].$name;
     $elem_full_name_design = $SETTINGS["design_dir"].$name;
 
     if (false === xcms_try_template($argv, $code, $output_stream, $name, $elem_full_name, false))
@@ -120,7 +120,7 @@ function xcms_try_template($argv, $code, $output_stream, $name, $elem_full_name,
             if ($final)
             {
                 xcms_log(XLOG_ERROR, "[COMPILER] Template name is '$name', nopagecode: ".$SETTINGS["nopagecode"]);
-                fputs($output_stream, file_get_contents("{$SETTINGS["xengine_dir"]}{$SETTINGS["nopagecode"]}.code"));
+                fputs($output_stream, file_get_contents("{$SETTINGS["engine_dir"]}{$SETTINGS["nopagecode"]}.code"));
             }
             else
                 return false;
@@ -178,7 +178,11 @@ function translate($string)
 
 function xcms_main($refname = "")
 {
-    global $SETTINGS, $xengine_dir, $design_dir;
+    global $SETTINGS;
+    // FIXME(mvel): this part uses old-good engine_dir
+    // as all templates are located at the old path
+    global $engine_dir;
+    global $design_dir;
     global $main_ref_file;
     global $main_ref_name;
     global $ref;
@@ -195,9 +199,9 @@ function xcms_main($refname = "")
     {
         $main_ref_file = "${design_dir}$ref.xcms";
     }
-    elseif (file_exists("${xengine_dir}global/$ref.xcms"))
+    elseif (file_exists("${engine_dir}global/$ref.xcms"))
     {
-        $main_ref_file = "${xengine_dir}global/$ref.xcms";
+        $main_ref_file = "${engine_dir}global/$ref.xcms";
     }
     else
     {
