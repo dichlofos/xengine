@@ -217,8 +217,6 @@ class XcmsUser
     }
     /**
       * Задает новый пароль пользователю
-      * TODO: Зачем хранить plaintext_password? Очень непонятное поведение,
-      * скорее всего небезопасное.
       * @param password новый пароль
       * @param old_password старый пароль (если передаётся, то сначала проверяется
       * на соответствие старому паролю
@@ -238,7 +236,6 @@ class XcmsUser
         }
 
         $this->dict["password"] = $this->_hash($password);
-        $this->plaintext_password = $password;
         $this->_save();
         return true;
     }
