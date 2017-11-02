@@ -53,8 +53,7 @@ class XBcrypt {
         }
 
         if ($bytes === '' && is_readable('/dev/urandom') &&
-            ($hRand = @fopen('/dev/urandom', 'rb')) !== FALSE)
-        {
+            ($hRand = @fopen('/dev/urandom', 'rb')) !== FALSE) {
             $bytes = fread($hRand, $count);
             fclose($hRand);
         }
@@ -119,10 +118,16 @@ function xcms_bcrypt_unit_test()
 {
     xut_begin("bcrypt");
 
-    $bcrypt = new XBcrypt(15);
-    $hash = $bcrypt->hash('password1');
-    $isGood = $bcrypt->verify('password1', $hash);
-    xut_equal($isGood, true, "bcrypt basic test");
+    $plain_text_password = "password1";
+
+    $bcrypt = new XBcrypt(9);
+    $hash = $bcrypt->hash($plain_text_password);
+    $is_good = $bcrypt->verify($plain_text_password, $hash);
+    xut_equal($is_good, true, "bcrypt basic test");
+
+    $bcrypt = new XBcrypt(9);
+    $is_good = $bcrypt->verify($plain_text_password, $hash);
+    xut_equal($is_good, true, "Password hashing is not stable");
 
     xut_end();
 }

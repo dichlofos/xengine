@@ -7,6 +7,7 @@ require_once("${xengine_dir}sys/string.php");
 require_once("${xengine_dir}sys/logger.php");
 require_once("${xengine_dir}sys/tag.php");
 
+
 class XcmsUser
 {
     private function _file_name($login)
@@ -22,8 +23,11 @@ class XcmsUser
     }
     private function _hash($string)
     {
-        // TODO: replace md5 with secure hash (sha256)
-        return md5($string."saulty!");
+        return hash("sha512", $string);
+    }
+    private function _check_hash($password, $expected_hash)
+    {
+        return $this->_hash(password) === $expected_hash;
     }
     /**
       * Сериализует пользователя
@@ -93,14 +97,14 @@ class XcmsUser
     }
     function param($key)
     {
-        return @$this->dict[$key];
+        return xcms_get_key_or($this->dict, $key);
     }
     /**
       * Возвращает электронную почту пользователя
       **/
     function email()
     {
-        return @$this->dict["email"];
+        return $this->param("email");
     }
     /**
       * Возвращает список групп, к которым принадлежит пользователь.
@@ -108,7 +112,7 @@ class XcmsUser
       **/
     function groups()
     {
-        return explode(EXP_COM, @$this->dict["groups"]);
+        return explode(EXP_COM, $this->param("groups"));
     }
 
     function check_rights($group, $throw_exception = XAUTH_THROW)
@@ -231,11 +235,11 @@ class XcmsUser
 
         if ($old_password !== false)
         {
-            if ($this->dict["password"] != $this->_hash($old_password))
+            if (!$this->_check_hash($old_password, $this->param("password")))
                 return $this->set_error("Старый пароль указан неверно. ", $throw_exception);
         }
 
-        $this->dict["password"] = $this->_hash($password);
+        $this->dict["password"] =  $this->_hash($password);
         $this->_save();
         return true;
     }
@@ -273,15 +277,18 @@ class XcmsUser
         $this->check_rights("admin");
         @unlink($this->_file_name($login));
     }
+    function _session_hash()
+    {
+        return $this->_hash($this->login().$this->param("password"));
+    }
     /**
       * Создает сессию c текущим пользователем
-      * TODO: странный API, это какая-то очень private-функция (или название неудачное)
-      * @param password пароль пользователя
+      * @param password plaintext-пароль пользователя
       **/
-    function create_session($password)
+    function create_session($plain_text_password)
     {
         $_SESSION["user"] = $this->login();
-        $_SESSION["passwd"] = $this->_hash($this->_hash($password));
+        $_SESSION["session_hash"] = $this->_hash($this->login().$this->_hash($plain_text_password));
     }
     /**
       * Проверяет сессию на соответствие пользователю.
@@ -292,8 +299,8 @@ class XcmsUser
             throw new Exception("Неправильное имя пользователя. ");
         if ($this->login() == "anonymous")
             return true;
-
-        if (xcms_get_key_or($_SESSION, "passwd") != $this->_hash($this->param("password")))
+        
+        if ($this->_session_hash() != xcms_get_key_or($_SESSION, "session_hash"))
         {
             $this->_cleanup_session();
             throw new Exception("Неправильный пароль. ", XE_WRONG_PASSWORD);
@@ -306,7 +313,7 @@ class XcmsUser
     private function _cleanup_session()
     {
         $_SESSION["user"] = "";
-        $_SESSION["passwd"] = "";
+        $_SESSION["session_hash"] = "";
     }
     /**
       * Выдаёт список всех пользователей в виде массива логинов
@@ -409,8 +416,13 @@ class XcmsUser
             xut_report("User belong to undefined group");
         } catch (Exception $e) {}
 
-        $user->create_session("kuku");
-        $user->check_session();
+        try
+        {
+            $user->create_session("kuku");
+            $user->check_session();
+        } catch (Exception $e) {
+            xut_check(false, "Exception raised, this should not happen here.");
+        }
 
         try
         {
@@ -428,6 +440,11 @@ class XcmsUser
             xut_report("Able to create another user with same email");
         } catch (Exception $e) {}
 
+        // calculate root hash
+        $root_user = new XcmsUser("root");
+        $root_user->passwd("root");
+        echo "<pre>'root' hash: ".$root_user->param("password")."</pre>";
+        
         xut_end();
     }
 };
@@ -440,13 +457,14 @@ function xcms_user($login = NULL, $password = NULL)
 {
     if ($login != NULL)
         $_SESSION["user"] = $login;
-    $login = @$_SESSION["user"];
+    $login = xcms_get_key_or($_SESSION, "user");
     if (!strlen($login))
         return new XcmsUser("anonymous");
-
     $u = new XcmsUser($login);
     if ($password != NULL)
+    {
         $u->create_session($password);
+    }
     $u->check_session();
     return $u;
 }
@@ -484,5 +502,3 @@ function xcms_auth_wall_admin()
         die("Impossible to get here. Please report to dev@fizlesh.ru");
     }
 }
-
-?>
