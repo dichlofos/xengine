@@ -27,7 +27,7 @@ class XcmsUser
     }
     private function _check_hash($password, $expected_hash)
     {
-        return $this->_hash(password) === $expected_hash;
+        return $this->_hash($password) === $expected_hash;
     }
     /**
       * Сериализует пользователя
