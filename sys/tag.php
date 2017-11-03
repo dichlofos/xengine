@@ -105,14 +105,16 @@ function xcms_convert_multiline($value)
 function xcms_tag_exists($tag_name)
 {
     global $SETTINGS;
-    $file = "{$SETTINGS["xengine_dir"]}taglist/$tag_name";
+    // FIXME(mvel): yep, taglist is still in old engine
+    $file = "{$SETTINGS["engine_dir"]}taglist/$tag_name";
     return file_exists($file);
 }
 
 function xcms_get_tag_list($tag_name)
 {
     global $SETTINGS;
-    $tag_file_name = "{$SETTINGS["xengine_dir"]}taglist/$tag_name";
+    // FIXME(mvel): yep, taglist is still in old engine
+    $tag_file_name = "{$SETTINGS["engine_dir"]}taglist/$tag_name";
     $tag_text = file_get_contents($tag_file_name);
     $tag_text = str_replace("\r", "", $tag_text);
 
