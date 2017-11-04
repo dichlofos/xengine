@@ -9,7 +9,7 @@ require_once("${xengine_dir}sys/auth.php");
 function xcms_get_html_template($template_name)
 {
     global $SETTINGS;
-    $full_name = "{$SETTINGS['xengine_dir']}templates/$template_name.html";
+    $full_name = "{$SETTINGS['engine_dir']}templates/$template_name.html";
     if (!file_exists($full_name))
     {
         xcms_log(XLOG_ERROR, "[KERNEL] Template '$full_name' not found");
