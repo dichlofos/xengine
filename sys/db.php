@@ -245,7 +245,7 @@ function xdb_get_entity_by_id($table_name, $id, $string_key = false)
     {
         if ($string_key)
         {
-            $idf = preg_replace('/[^-a-zA-Z_:]/', '', $id);
+            $idf = preg_replace('/[^-a-zA-Z_:.]/', '', $id);
         }
         else
         {
