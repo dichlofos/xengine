@@ -39,6 +39,13 @@ function xdb_get_idvar($key, $default_value = XDB_INVALID_ID, $allowed_values = 
     return $value;
 }
 
+/**
+ * Proper SQLite3 escaping
+ */
+function xdb_quote($db, $value)
+{
+    return "'".$db->escapeString()."'";
+}
 
 /**
   * Helper for obtaining enum values from request. Filters all
@@ -144,7 +151,8 @@ function xdb_insert_ai($table_name, $pk_name, $keys_values, $allowed_keys, $over
         if ($use_ai and $key == $pk_name)
             continue; // skip autoincremented keys
         $keys .= "$key, ";
-        $values .= "'".$db->escapeString($value)."', ";
+        $value = xdb_quote($db, $value);
+        $values .= "$value, ";
     }
     $keys = substr($keys, 0, strlen($keys) - 2);
     $values = substr($values, 0, strlen($values) - 2);
@@ -202,14 +210,16 @@ function xdb_update($table_name, $primary_keys, $keys_values, $allowed_keys, $ov
         if (array_key_exists($key, $primary_keys))
             continue; // skip primary keys
 
-        $values .= "$key = '".$db->escapeString($value)."', ";
+        $value = xdb_quote($db, $value);
+        $values .= "$key = $value, ";
     }
     $values = substr($values, 0, strlen($values) - 2);
 
     $cond = "";
     foreach ($primary_keys as $key => $value)
     {
-        $cond .= "($key = '".$db->escapeString($value)."') AND ";
+        $value = xdb_quote($db, $value);
+        $cond .= "($key = $value) AND ";
     }
     $cond = substr($cond, 0, strlen($cond) - 5);
     $query = "UPDATE $table_name SET $values WHERE $cond";
@@ -243,11 +253,8 @@ function xdb_get_entity_by_id($table_name, $id, $string_key = false)
 
     if ($id != XDB_NEW)
     {
-        if ($string_key)
-        {
-            $idf = preg_replace('/[^-a-zA-Z_:.]/', '', $id);
-        }
-        else
+        $idf = $id;
+        if (!$string_key)
         {
             $idf = preg_replace('/[^-0-9]/', '', $id);
         }
@@ -258,7 +265,9 @@ function xdb_get_entity_by_id($table_name, $id, $string_key = false)
         }
         $id = $idf;
         if ($string_key)
-            $id = "\"$id\"";
+        {
+            $id = xdb_quote($db, $id);
+        }
 
         $query = "SELECT * FROM $table_name WHERE $key_name = $id";
         $sel = $db->query($query);
@@ -347,7 +356,8 @@ function xdb_get_filtered($table_name, $keys)
 function xdb_delete($table_name, $key_value, $outer_db = NULL)
 {
     $db = ($outer_db === NULL) ? xdb_get_write() : $outer_db;
-    $cond = "${table_name}_id = '".$db->escapeString($key_value)."'";
+    $key_value = xdb_quote($db, $key_value);
+    $cond = "${table_name}_id = $key_value";
     $query = "DELETE FROM $table_name WHERE $cond";
     $result = $db->exec($query);
     if ($result)
