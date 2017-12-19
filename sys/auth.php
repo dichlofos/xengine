@@ -7,6 +7,7 @@ require_once("${xengine_dir}sys/string.php");
 require_once("${xengine_dir}sys/logger.php");
 require_once("${xengine_dir}sys/tag.php");
 
+define('XAUTH_AUTH_REQUIRED', "Пожалуйста, авторизуйтесь! ");
 
 class XcmsUser
 {
