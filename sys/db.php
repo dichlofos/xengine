@@ -44,7 +44,7 @@ function xdb_get_idvar($key, $default_value = XDB_INVALID_ID, $allowed_values = 
  */
 function xdb_quote($db, $value)
 {
-    return "'".$db->escapeString()."'";
+    return "'".$db->escapeString($value)."'";
 }
 
 /**
