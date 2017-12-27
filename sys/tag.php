@@ -173,7 +173,7 @@ function xcms_draw_text_tag($id, $value, $is_longtext, $placeholder = "")
   * no-new-key - disable new key addition (not used in XCMS now)
   * longtext - use textareas instead of text input
   **/
-function xcms_editlist_form($file, $skip_params = "", $flags = "")
+function xcms_editlist_form($file, $flags = "", $skip_params = "")
 {
     $list = xcms_get_list($file);
 
@@ -221,7 +221,8 @@ function xcms_editlist_form($file, $skip_params = "", $flags = "")
                 <select name="<?php echo $id; ?>" id="<?php echo $id; ?>" class="key-value"><?php
                 foreach ($taglist as $vtag => $tag)
                 {
-                    if ($vtag == XCMS_TAG_NAME) continue;
+                    if ($vtag == XCMS_TAG_NAME)
+                        continue;
                     $vtag = htmlspecialchars($vtag);
                     $tag = htmlspecialchars($tag);
                     if ($tag == $value) echo "<option selected value=\"$tag\">$vtag</option>";
