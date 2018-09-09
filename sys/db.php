@@ -177,7 +177,8 @@ function xdb_insert_ai($table_name, $pk_name, $keys_values, $allowed_keys, $over
     else
     {
         $result = false;
-        xcms_log(XLOG_ERROR, "[DB] $query");
+        $error_message = $db->lastErrorMsg();
+        xcms_log(XLOG_ERROR, "[DB] $query. Error: $error_message");
     }
     if ($outer_db === NULL)
         $db->close();
@@ -243,9 +244,14 @@ function xdb_update($table_name, $primary_keys, $keys_values, $allowed_keys, $ov
     $query = "UPDATE $table_name SET $values WHERE $cond";
     $result = $db->exec($query);
     if ($result)
+    {
         xcms_log(XLOG_INFO, "[DB] $query");
+    }
     else
-        xcms_log(XLOG_ERROR, "[DB] $query");
+    {
+        $error_message = $db->lastErrorMsg();
+        xcms_log(XLOG_ERROR, "[DB] $query. Error: $error_message");
+    }
     if ($outer_db === NULL)
         $db->close();
     return $result ? true : false;
@@ -291,7 +297,8 @@ function xdb_get_entity_by_id($table_name, $id, $string_key = false)
         $sel = $db->query($query);
         if (!($ev = $sel->fetchArray(SQLITE3_ASSOC)))
         {
-            xcms_log(XLOG_ERROR, "[DB] Cannot fetch entity from '$table_name' with id: '$id'. Query: $query.");
+            $error_message = $db->lastErrorMsg();
+            xcms_log(XLOG_ERROR, "[DB] Cannot fetch entity from '$table_name' with id: '$id'. Query: $query. Error: $error_message");
             return array();
         }
         $db->close();
@@ -351,7 +358,8 @@ function xdb_get_filtered($table_name, $keys)
     $sel = $db->query($query);
     if (!($ev = resultSetToArray($sel)))
     {
-        xcms_log(XLOG_ERROR, "[DB] Cannot fetch entries from '$table_name' with keys: '$keys'. Query: $query.");
+        $error_message = $db->lastErrorMsg();
+        xcms_log(XLOG_ERROR, "[DB] Cannot fetch entries from '$table_name' with keys: '$keys'. Query: $query. Error: $error_message");
         return array();
     }
     $db->close();
@@ -398,7 +406,8 @@ function xdb_fetch_one($db, $query)
     $sel = $db->query($query);
     if (!($obj = $sel->fetchArray(SQLITE3_ASSOC)))
     {
-        xcms_log(XLOG_ERROR, "[DB] Cannot fetch object using query: $query.");
+        $error_message = $db->lastErrorMsg();
+        xcms_log(XLOG_ERROR, "[DB] Cannot fetch object using query: $query. Error: $error_message");
         return array();
     }
     return $obj;
