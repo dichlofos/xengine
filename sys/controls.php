@@ -130,7 +130,7 @@ function xcmst_control($name, $value, $placeholder, $class, $type = "input", $ti
     }
     elseif ($type == "hidden")
     {
-        echo "<input type=\"hidden\" name=\"$name\" value=\"$value\" $attrs/>";
+        echo "<input type=\"hidden\" name=\"$name\" value=\"$value\" id=\"$name-hidden\" $attrs/>";
     }
     else
     {
