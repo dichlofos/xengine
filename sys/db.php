@@ -78,6 +78,7 @@ function xdb_get()
 
 /**
   * Obtains database handle in writeable mode
+  * @return db handle
   **/
 function xdb_get_write()
 {
@@ -97,19 +98,20 @@ function xdb_get_write()
   * and table should have AI key
   * @param $values KV-array of row values
   * @param $allowed_keys only these keys will be taken from $values
+  * @param $outer_db use given external database (not used by default)
   * @return true on successful update, false on error
   * and autoincremented field id on insertion
   **/
-function xdb_insert_or_update($table_name, $primary_keys, $values, $allowed_keys)
+function xdb_insert_or_update($table_name, $primary_keys, $values, $allowed_keys, $outer_db = NULL)
 {
     $insert = false;
     foreach ($primary_keys as $key => $value)
         if ($value == XDB_NEW)
             $insert = true;
     if ($insert)
-        return xdb_insert_ai($table_name, $primary_keys, $values, $allowed_keys);
+        return xdb_insert_ai($table_name, $primary_keys, $values, $allowed_keys, XDB_OVERRIDE_TS, XDB_USE_AI, $outer_db);
     else
-        return xdb_update($table_name, $primary_keys, $values, $allowed_keys);
+        return xdb_update($table_name, $primary_keys, $values, $allowed_keys, XDB_OVERRIDE_TS, $outer_db);
 }
 
 
@@ -133,7 +135,15 @@ function xdb_insert_or_update($table_name, $primary_keys, $values, $allowed_keys
   **/
 function xdb_insert_ai($table_name, $pk_name, $keys_values, $allowed_keys, $override_ts = XDB_OVERRIDE_TS, $use_ai = XDB_USE_AI, $outer_db = NULL)
 {
-    $db = ($outer_db === NULL) ? xdb_get_write() : $outer_db;
+    $db = NULL;
+    if ($outer_db === NULL)
+    {
+        $db = xdb_get_write();
+    }
+    else
+    {
+        $db = $outer_db;
+    }
     $keys = "";
     $values = "";
 
@@ -192,7 +202,15 @@ function xdb_insert_ai($table_name, $pk_name, $keys_values, $allowed_keys, $over
   **/
 function xdb_update($table_name, $primary_keys, $keys_values, $allowed_keys, $override_ts = XDB_OVERRIDE_TS, $outer_db = NULL)
 {
-    $db = ($outer_db === NULL) ? xdb_get_write() : $outer_db;
+    $db = NULL;
+    if ($outer_db === NULL)
+    {
+        $db = xdb_get_write();
+    }
+    else
+    {
+        $db = $outer_db;
+    }
     $values = "";
     if ($override_ts)
         $keys_values["${table_name}_modified"] = xcms_datetime();
