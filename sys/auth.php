@@ -300,7 +300,7 @@ class XcmsUser
             throw new Exception("Неправильное имя пользователя. ");
         if ($this->login() == "anonymous")
             return true;
-        
+
         if ($this->_session_hash() != xcms_get_key_or($_SESSION, "session_hash"))
         {
             $this->_cleanup_session();
@@ -445,7 +445,7 @@ class XcmsUser
         $root_user = new XcmsUser("root");
         $root_user->passwd("root");
         echo "<pre>'root' hash: ".$root_user->param("password")."</pre>";
-        
+
         xut_end();
     }
 };
@@ -473,7 +473,7 @@ function xcms_user($login = NULL, $password = NULL)
 /**
   * Checks current user access to groups
   * @param $groups groups/users ACL (array)
-  * @return true if access granted, false otherwise
+  * @return true when access granted, false otherwise
   **/
 function xcms_check_rights($groups)
 {
