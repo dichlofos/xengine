@@ -86,6 +86,7 @@ function xdb_get_write()
     global $content_dir;
     $rel_db_name = xcms_get_key_or($SETTINGS, 'xsm_db_name', XDB_DEFAULT_DB_PATH);
     $db_name = $content_dir.$rel_db_name;
+    xcms_log(XLOG_INFO, "[DB] Obtaining db write lock");
     return new SQlite3($db_name, SQLITE3_OPEN_READWRITE);
 }
 
@@ -181,7 +182,10 @@ function xdb_insert_ai($table_name, $pk_name, $keys_values, $allowed_keys, $over
         xcms_log(XLOG_ERROR, "[DB] $query. Error: $error_message");
     }
     if ($outer_db === NULL)
+    {
+        xcms_log(XLOG_INFO, "[DB] Close inner db (AI)");
         $db->close();
+    }
     return $result;
 }
 
@@ -253,7 +257,10 @@ function xdb_update($table_name, $primary_keys, $keys_values, $allowed_keys, $ov
         xcms_log(XLOG_ERROR, "[DB] $query. Error: $error_message");
     }
     if ($outer_db === NULL)
+    {
+        xcms_log(XLOG_INFO, "[DB] Close inner db");
         $db->close();
+    }
     return $result ? true : false;
 }
 
@@ -272,11 +279,11 @@ function xdb_update($table_name, $primary_keys, $keys_values, $allowed_keys, $ov
   **/
 function xdb_get_entity_by_id($table_name, $id, $string_key = false)
 {
-    $db = xdb_get();
     $key_name = "${table_name}_id";
 
     if ($id != XDB_NEW)
     {
+        $db = xdb_get();
         $idf = $id;
         if (!$string_key)
         {
@@ -298,7 +305,7 @@ function xdb_get_entity_by_id($table_name, $id, $string_key = false)
         if (!($ev = $sel->fetchArray(SQLITE3_ASSOC)))
         {
             $error_message = $db->lastErrorMsg();
-            xcms_log(XLOG_ERROR, "[DB] Cannot fetch entity from '$table_name' with id: '$id'. Query: $query. Error: $error_message");
+            xcms_log(XLOG_WARNING, "[DB] No entity from '$table_name' with id: '$id'. Query: $query. Error: $error_message");
             return array();
         }
         $db->close();
@@ -359,7 +366,8 @@ function xdb_get_filtered($table_name, $keys)
     if (!($ev = resultSetToArray($sel)))
     {
         $error_message = $db->lastErrorMsg();
-        xcms_log(XLOG_ERROR, "[DB] Cannot fetch entries from '$table_name' with keys: '$keys'. Query: $query. Error: $error_message");
+        xcms_log(XLOG_WARNING, "[DB] No entries from '$table_name' with keys: '$keys'. Query: $query. Last error: $error_message");
+        $db->close();
         return array();
     }
     $db->close();
@@ -407,7 +415,7 @@ function xdb_fetch_one($db, $query)
     if (!($obj = $sel->fetchArray(SQLITE3_ASSOC)))
     {
         $error_message = $db->lastErrorMsg();
-        xcms_log(XLOG_ERROR, "[DB] Cannot fetch object using query: $query. Error: $error_message");
+        xcms_log(XLOG_WARNING, "[DB] No objects fetched using query: $query. Last error: $error_message");
         return array();
     }
     return $obj;
