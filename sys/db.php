@@ -31,11 +31,13 @@ define('XDB_DEFAULT_DB_PATH', "ank/fizlesh.sqlite3");
 function xdb_get_idvar($key, $default_value = XDB_INVALID_ID, $allowed_values = array())
 {
     $value = xcms_get_key_or($_GET, $key, '');
-    if ($value == XDB_NEW || array_search($value, $allowed_values) !== false)
+    if ($value == XDB_NEW || array_search($value, $allowed_values) !== false) {
         return $value;
+    }
     $value = xcms_filter_nondigits($value);
-    if (xu_empty($value))
+    if (xu_empty($value)) {
         return $default_value;
+    }
     return $value;
 }
 
@@ -67,6 +69,8 @@ function xdb_get()
     global $SETTINGS;
     global $content_dir;
     $rel_db_name = xcms_get_key_or($SETTINGS, 'xsm_db_name', XDB_DEFAULT_DB_PATH);
+    $db_type = xcms_get_key_or($SETTINGS, "db_type", XDB_DEFAULT_DB_TYPE);
+
     $db_name = $content_dir.$rel_db_name;
 
     $db = new SQlite3($db_name, SQLITE3_OPEN_READONLY);
@@ -103,16 +107,27 @@ function xdb_get_write()
   * @return true on successful update, false on error
   * and autoincremented field id on insertion
   **/
-function xdb_insert_or_update($table_name, $primary_keys, $values, $allowed_keys, $outer_db = NULL)
+function xdb_insert_or_update($table_name, $primary_keys, $values, $allowed_keys, $outer_db = null)
 {
     $insert = false;
-    foreach ($primary_keys as $key => $value)
-        if ($value == XDB_NEW)
+    foreach ($primary_keys as $key => $value) {
+        if ($value == XDB_NEW) {
             $insert = true;
-    if ($insert)
-        return xdb_insert_ai($table_name, $primary_keys, $values, $allowed_keys, XDB_OVERRIDE_TS, XDB_USE_AI, $outer_db);
-    else
+        }
+    }
+    if ($insert) {
+        return xdb_insert_ai(
+            $table_name,
+            $primary_keys,
+            $values,
+            $allowed_keys,
+            XDB_OVERRIDE_TS,
+            XDB_USE_AI,
+            $outer_db
+        );
+    } else {
         return xdb_update($table_name, $primary_keys, $values, $allowed_keys, XDB_OVERRIDE_TS, $outer_db);
+    }
 }
 
 
@@ -134,33 +149,36 @@ function xdb_insert_or_update($table_name, $primary_keys, $values, $allowed_keys
   * and ${table_name}_changedby representing last user name
   * so they should always present in any table.
   **/
-function xdb_insert_ai($table_name, $pk_name, $keys_values, $allowed_keys, $override_ts = XDB_OVERRIDE_TS, $use_ai = XDB_USE_AI, $outer_db = NULL)
-{
-    $db = NULL;
-    if ($outer_db === NULL)
-    {
+function xdb_insert_ai(
+    $table_name,
+    $pk_name,
+    $keys_values,
+    $allowed_keys,
+    $override_ts = XDB_OVERRIDE_TS,
+    $use_ai = XDB_USE_AI,
+    $outer_db = null
+) {
+    $db = null;
+    if ($outer_db === null) {
         $db = xdb_get_write();
-    }
-    else
-    {
+    } else {
         $db = $outer_db;
     }
     $keys = "";
     $values = "";
 
-    if ($override_ts)
-    {
+    if ($override_ts) {
         $keys_values["${table_name}_created"] = xcms_datetime();
         $keys_values["${table_name}_modified"] = '';
     }
     // for audit purposes
     $keys_values["${table_name}_changedby"] = xcms_user()->login();
 
-    foreach ($allowed_keys as $key => $unused)
-    {
+    foreach ($allowed_keys as $key => $unused) {
         $value = xcms_get_key_or($keys_values, $key);
-        if ($use_ai and $key == $pk_name)
+        if ($use_ai and $key == $pk_name) {
             continue; // skip autoincremented keys
+        }
         $keys .= "$key, ";
         $value = xdb_quote($db, $value);
         $values .= "$value, ";
@@ -170,19 +188,15 @@ function xdb_insert_ai($table_name, $pk_name, $keys_values, $allowed_keys, $over
 
     $query = "INSERT INTO $table_name ($keys) VALUES ($values)";
     $result = $db->exec($query);
-    if ($result)
-    {
+    if ($result) {
         $result = $db->lastInsertRowid();
         xcms_log(XLOG_INFO, "[DB] $query");
-    }
-    else
-    {
+    } else {
         $result = false;
         $error_message = $db->lastErrorMsg();
         xcms_log(XLOG_ERROR, "[DB] $query. Error: $error_message");
     }
-    if ($outer_db === NULL)
-    {
+    if ($outer_db === null) {
         xcms_log(XLOG_INFO, "[DB] Close inner db (AI)");
         $db->close();
     }
@@ -205,33 +219,39 @@ function xdb_insert_ai($table_name, $pk_name, $keys_values, $allowed_keys, $over
   * @sa xdb_insert_ai
   * @return true in case of success, false otherwise
   **/
-function xdb_update($table_name, $primary_keys, $keys_values, $allowed_keys, $override_ts = XDB_OVERRIDE_TS, $outer_db = NULL)
-{
-    $db = NULL;
-    if ($outer_db === NULL)
-    {
+function xdb_update(
+    $table_name,
+    $primary_keys,
+    $keys_values,
+    $allowed_keys,
+    $override_ts = XDB_OVERRIDE_TS,
+    $outer_db = null
+) {
+    $db = null;
+    if ($outer_db === null) {
         $db = xdb_get_write();
-    }
-    else
-    {
+    } else {
         $db = $outer_db;
     }
     $values = "";
-    if ($override_ts)
+    if ($override_ts) {
         $keys_values["${table_name}_modified"] = xcms_datetime();
+    }
     // for audit purposes
     $keys_values["${table_name}_changedby"] = xcms_user()->login();
 
-    foreach ($keys_values as $key => $value)
-    {
-        if (!array_key_exists($key, $allowed_keys))
+    foreach ($keys_values as $key => $value) {
+        if (!array_key_exists($key, $allowed_keys)) {
             continue; // skip keys that are not in scheme
+        }
 
-        if ($key == "${table_name}_created")
+        if ($key == "${table_name}_created") {
             continue; // never update 'created' field
+        }
 
-        if (array_key_exists($key, $primary_keys))
+        if (array_key_exists($key, $primary_keys)) {
             continue; // skip primary keys
+        }
 
         $value = xdb_quote($db, $value);
         $values .= "$key = $value, ";
@@ -239,25 +259,20 @@ function xdb_update($table_name, $primary_keys, $keys_values, $allowed_keys, $ov
     $values = substr($values, 0, strlen($values) - 2);
 
     $cond = "";
-    foreach ($primary_keys as $key => $value)
-    {
+    foreach ($primary_keys as $key => $value) {
         $value = xdb_quote($db, $value);
         $cond .= "($key = $value) AND ";
     }
     $cond = substr($cond, 0, strlen($cond) - 5);
     $query = "UPDATE $table_name SET $values WHERE $cond";
     $result = $db->exec($query);
-    if ($result)
-    {
+    if ($result) {
         xcms_log(XLOG_INFO, "[DB] $query");
-    }
-    else
-    {
+    } else {
         $error_message = $db->lastErrorMsg();
         xcms_log(XLOG_ERROR, "[DB] $query. Error: $error_message");
     }
-    if ($outer_db === NULL)
-    {
+    if ($outer_db === null) {
         xcms_log(XLOG_INFO, "[DB] Close inner db");
         $db->close();
     }
@@ -281,37 +296,36 @@ function xdb_get_entity_by_id($table_name, $id, $string_key = false)
 {
     $key_name = "${table_name}_id";
 
-    if ($id != XDB_NEW)
-    {
+    if ($id != XDB_NEW) {
         $db = xdb_get();
         $idf = $id;
-        if (!$string_key)
-        {
+        if (!$string_key) {
             $idf = preg_replace('/[^-0-9]/', '', $id);
         }
-        if (strlen($idf) == 0)
-        {
-            xcms_log(XLOG_ERROR, "[DB] It's not possible to fetch entity from '$table_name' with empty or filtered id '$id'.");
+        if (strlen($idf) == 0) {
+            xcms_log(
+                XLOG_ERROR,
+                "[DB] It's not possible to fetch entity from '$table_name' with empty or filtered id '$id'."
+            );
             return array();
         }
         $id = $idf;
-        if ($string_key)
-        {
+        if ($string_key) {
             $id = xdb_quote($db, $id);
         }
 
         $query = "SELECT * FROM $table_name WHERE $key_name = $id";
         $sel = $db->query($query);
-        if (!($ev = $sel->fetchArray(SQLITE3_ASSOC)))
-        {
+        if (!($ev = $sel->fetchArray(SQLITE3_ASSOC))) {
             $error_message = $db->lastErrorMsg();
-            xcms_log(XLOG_WARNING, "[DB] No entity from '$table_name' with id: '$id'. Query: $query. Error: $error_message");
+            xcms_log(
+                XLOG_WARNING,
+                "[DB] No entity from '$table_name' with id: '$id'. Query: $query. Error: $error_message"
+            );
             return array();
         }
         $db->close();
-    }
-    else
-    {
+    } else {
         // new record
         $ev = array(
             $key_name => $id,
@@ -328,8 +342,7 @@ function query_length($query)
     if (!$tmp) {
         return 0;
     }
-    while ($tmp->fetchArray())
-    {
+    while ($tmp->fetchArray()) {
         ++$count;
     }
     return $count;
@@ -339,14 +352,11 @@ function resultSetToArray($queryResultSet)
 {
     $multiArray = array();
     $count = 0;
-    if (!$queryResultSet)
-    {
+    if (!$queryResultSet) {
         return array();
     }
-    while ($row = $queryResultSet->fetchArray(SQLITE3_ASSOC))
-    {
-        foreach ($row as $i => $value)
-        {
+    while ($row = $queryResultSet->fetchArray(SQLITE3_ASSOC)) {
+        foreach ($row as $i => $value) {
             $multiArray[$count][$i] = $value;
         }
         $count++;
@@ -359,14 +369,17 @@ function xdb_get_filtered($table_name, $keys)
 {
     $db = xdb_get();
     $filter = "1=1";
-    foreach ($keys as $key => $value)
+    foreach ($keys as $key => $value) {
         $filter = "$filter AND $key=\"$value\"";
+    }
     $query = "SELECT * FROM $table_name WHERE $filter;";
     $sel = $db->query($query);
-    if (!($ev = resultSetToArray($sel)))
-    {
+    if (!($ev = resultSetToArray($sel))) {
         $error_message = $db->lastErrorMsg();
-        xcms_log(XLOG_WARNING, "[DB] No entries from '$table_name' with keys: '$keys'. Query: $query. Last error: $error_message");
+        xcms_log(
+            XLOG_WARNING,
+            "[DB] No entries from '$table_name' with keys: '$keys'. Query: $query. Last error: $error_message"
+        );
         $db->close();
         return array();
     }
@@ -387,19 +400,21 @@ function xdb_get_filtered($table_name, $keys)
   * If the $id has the magic value XDB_NEW, the empty record is
   * returned
   **/
-function xdb_delete($table_name, $key_value, $outer_db = NULL)
+function xdb_delete($table_name, $key_value, $outer_db = null)
 {
-    $db = ($outer_db === NULL) ? xdb_get_write() : $outer_db;
+    $db = ($outer_db === null) ? xdb_get_write() : $outer_db;
     $key_value = xdb_quote($db, $key_value);
     $cond = "${table_name}_id = $key_value";
     $query = "DELETE FROM $table_name WHERE $cond";
     $result = $db->exec($query);
-    if ($result)
+    if ($result) {
         xcms_log(XLOG_INFO, "[DB] $query");
-    else
+    } else {
         xcms_log(XLOG_ERROR, "[DB] $query");
-    if ($outer_db === NULL)
+    }
+    if ($outer_db === null) {
         $db->close();
+    }
     return $result;
 }
 
@@ -412,8 +427,7 @@ function xdb_delete($table_name, $key_value, $outer_db = NULL)
 function xdb_fetch_one($db, $query)
 {
     $sel = $db->query($query);
-    if (!($obj = $sel->fetchArray(SQLITE3_ASSOC)))
-    {
+    if (!($obj = $sel->fetchArray(SQLITE3_ASSOC))) {
         $error_message = $db->lastErrorMsg();
         xcms_log(XLOG_WARNING, "[DB] No objects fetched using query: $query. Last error: $error_message");
         return array();
@@ -428,8 +442,9 @@ function xdb_fetch_one($db, $query)
 function xdb_count($db, $query)
 {
     $obj = xdb_fetch_one($db, $query);
-    if (!$obj)
+    if (!$obj) {
         return 0;
+    }
     return (integer)(xcms_get_key_or($obj, "cnt", "0"));
 }
 
@@ -446,7 +461,7 @@ function xdb_like($mask, $value)
     $mask = str_replace(
         array("%", "_"),
         array(".*?", "."),
-            preg_quote($mask, "/")
+        preg_quote($mask, "/")
     );
     $mask = "/^$mask$/ui";
     return preg_match($mask, $value);
@@ -464,14 +479,15 @@ function xdb_get_table($table_name, $filter = '', $order = '')
 {
     $db = xdb_get();
     $query = "SELECT * FROM $table_name";
-    if (strlen($filter))
+    if (strlen($filter)) {
         $query .= " WHERE $filter ";
-    if (strlen($order))
+    }
+    if (strlen($order)) {
         $query .= " ORDER BY $order ";
+    }
     $sel = $db->query($query);
     $ans = array();
-    while ($obj = $sel->fetchArray(SQLITE3_ASSOC))
-    {
+    while ($obj = $sel->fetchArray(SQLITE3_ASSOC)) {
         $ans[] = $obj;
     }
     $db->close();
@@ -490,38 +506,13 @@ function xdb_get_table_by_pk($table_name, $filter = '', $order = '')
     $ans = xdb_get_table($table_name, $filter, $order);
     $result = array();
     $key_name = "${table_name}_id";
-    foreach ($ans as $obj)
-    {
+    foreach ($ans as $obj) {
         $key = $obj[$key_name];
         $result[$key] = $obj;
     }
     return $result;
 }
 
-/**
-  * Embedded query debugger
-  **/
-function xdb_debug_area($query, $enabled = XDB_DEBUG_AREA_ENABLED)
-{
-    $query = str_replace("\n", " ", $query);
-    $query = str_replace("\r", " ", $query);
-    $query = str_replace("\t", " ", $query);
-    $query = preg_replace("/ +/", " ", $query);
-    ?>
-    <textarea rows="5" cols="120" style="display: <?php echo ($enabled ? "" : "none"); ?>;"
-        id="person-query-debug"><?php echo $query; ?></textarea><?php
-}
-
-
-/**
-  * Migration helpers
-  * TODO(mvel): unit tests for them
-  **/
-function xdb_open_db($db_name)
-{
-    xcms_log(XLOG_INFO, "[DB] Open database '$db_name'");
-    return new SQlite3($db_name, SQLITE3_OPEN_READONLY);
-}
 
 
 function xdb_open_db_write($db_name)
@@ -545,8 +536,7 @@ function xdb_drop_column($db, $table_name, $column_name, $create_table)
     // copy data
     $sel = xdb_get_selector($db, $table_name);
     $objects = 0;
-    while ($obj = $sel->fetchArray(SQLITE3_ASSOC))
-    {
+    while ($obj = $sel->fetchArray(SQLITE3_ASSOC)) {
         $idn = "${table_name}_id";
         $object_id = $obj[$idn];
         unset($obj[$column_name]); // specific code
@@ -565,4 +555,17 @@ function xdb_vacuum($db)
 {
     $db->exec("VACUUM");
     xcms_log(XLOG_INFO, "[DB] Database vacuumed");
+}
+
+/**
+  * Embedded query debugger
+  **/
+function xdb_debug_area($query, $enabled = XDB_DEBUG_AREA_ENABLED)
+{
+    $query = str_replace("\n", " ", $query);
+    $query = str_replace("\r", " ", $query);
+    $query = str_replace("\t", " ", $query);
+    $query = preg_replace("/ +/", " ", $query);
+    ?><textarea rows="5" cols="120" style="display: <?php echo ($enabled ? "" : "none"); ?>;"
+        id="person-query-debug"><?php echo $query; ?></textarea><?php
 }
