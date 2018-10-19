@@ -20,7 +20,15 @@ define('XDB_NO_USE_AI', false); // default
 define('XDB_DEBUG_AREA_DISABLED', false);
 define('XDB_DEBUG_AREA_ENABLED', true); // default
 
-define('XDB_DEFAULT_DB_PATH', "ank/fizlesh.sqlite3");
+define('XDB_DB_NAME', 'db_name');
+define('XDB_DEFAULT_DB_NAME', "ank/fizlesh.sqlite3");
+
+define('XDB_DB_TYPE', 'db_type');
+
+define('XDB_DB_TYPE_SQLITE3', "sqlite3");
+define('XDB_DB_TYPE_PG', "pg");
+
+define('XDB_DEFAULT_DB_TYPE', XDB_DB_TYPE_SQLITE3);
 
 
 /**
@@ -68,15 +76,18 @@ function xdb_get()
 {
     global $SETTINGS;
     global $content_dir;
-    $rel_db_name = xcms_get_key_or($SETTINGS, 'xsm_db_name', XDB_DEFAULT_DB_PATH);
-    $db_type = xcms_get_key_or($SETTINGS, "db_type", XDB_DEFAULT_DB_TYPE);
-
-    $db_name = $content_dir.$rel_db_name;
-
-    $db = new SQlite3($db_name, SQLITE3_OPEN_READONLY);
-    // enhance LIKE immediately to obtain proper UTF-8 support
-    $db->createFunction('LIKE', 'xdb_like', 2);
-    return $db;
+    $rel_db_name = xcms_get_key_or($SETTINGS, XDB_DB_NAME, XDB_DEFAULT_DB_NAME);
+    $db_type = xcms_get_key_or($SETTINGS, XDB_DB_TYPE, XDB_DEFAULT_DB_TYPE);
+    if ($db_type == XDB_DB_TYPE_SQLITE3) {
+        $db_name = $content_dir.$rel_db_name;
+        $db = new SQlite3($db_name, SQLITE3_OPEN_READONLY);
+        // enhance LIKE immediately to obtain proper UTF-8 support
+        $db->createFunction('LIKE', 'xdb_like', 2);
+        return $db;
+    } else {
+        $db = pg_connect($rel_db_name);
+        return $db;
+    }
 }
 
 
@@ -88,12 +99,28 @@ function xdb_get_write()
 {
     global $SETTINGS;
     global $content_dir;
-    $rel_db_name = xcms_get_key_or($SETTINGS, 'xsm_db_name', XDB_DEFAULT_DB_PATH);
-    $db_name = $content_dir.$rel_db_name;
-    xcms_log(XLOG_INFO, "[DB] Obtaining db write lock");
-    return new SQlite3($db_name, SQLITE3_OPEN_READWRITE);
+    $rel_db_name = xcms_get_key_or($SETTINGS, XDB_DB_NAME, XDB_DEFAULT_DB_NAME);
+    $db_type = xcms_get_key_or($SETTINGS, XDB_DB_TYPE, XDB_DEFAULT_DB_TYPE);
+    if ($db_type == XDB_DB_TYPE_SQLITE3) {
+        $db_name = $content_dir.$rel_db_name;
+        xcms_log(XLOG_INFO, "[DB] Obtaining db write lock");
+        return new SQlite3($db_name, SQLITE3_OPEN_READWRITE);
+    } else {
+        $db = pg_connect($rel_db_name);
+        return $db;
+    }
 }
 
+function xdb_query($db, $query)
+{
+    global $SETTINGS;
+    $db_type = xcms_get_key_or($SETTINGS, XDB_DB_TYPE, XDB_DEFAULT_DB_TYPE);
+    if ($db_type == XDB_DB_TYPE_SQLITE3) {
+        return $db->query($query);
+    } else {
+        return pg_query($db, $query);
+    }
+}
 
 /**
   * Inserts or updates DB record
@@ -557,6 +584,12 @@ function xdb_vacuum($db)
     xcms_log(XLOG_INFO, "[DB] Database vacuumed");
 }
 
+function xdb_unit_test()
+{
+    $db = xdb_get();
+    xdb_query($db, "SELECT * FROM `department`");
+}
+
 /**
   * Embedded query debugger
   **/
@@ -569,3 +602,4 @@ function xdb_debug_area($query, $enabled = XDB_DEBUG_AREA_ENABLED)
     ?><textarea rows="5" cols="120" style="display: <?php echo ($enabled ? "" : "none"); ?>;"
         id="person-query-debug"><?php echo $query; ?></textarea><?php
 }
+
