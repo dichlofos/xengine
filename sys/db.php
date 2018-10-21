@@ -587,7 +587,7 @@ function xdb_vacuum($db)
 function xdb_unit_test()
 {
     $db = xdb_get();
-    xdb_query($db, "SELECT * FROM `department`");
+    xdb_query($db, "SELECT * FROM department");
 }
 
 /**
