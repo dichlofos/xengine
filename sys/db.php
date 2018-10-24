@@ -50,11 +50,15 @@ function xdb_get_idvar($key, $default_value = XDB_INVALID_ID, $allowed_values = 
 }
 
 /**
- * Proper SQLite3 escaping
+ * Proper escaping
  */
 function xdb_quote($db, $value)
 {
-    return "'".$db->escapeString($value)."'";
+    if (xdb_get_type() == XDB_DB_TYPE_SQLITE3) {
+        return "'".$db->escapeString($value)."'";
+    } else {
+        return "'".pg_escape_string($db, $value)."'";
+    }
 }
 
 /**
@@ -68,6 +72,11 @@ function xdb_get_enumvar($key)
     return $value;
 }
 
+function xdb_get_type()
+{
+    global $SETTINGS;
+    return xcms_get_key_or($SETTINGS, XDB_DB_TYPE, XDB_DEFAULT_DB_TYPE);
+}
 
 /**
   * Obtains database handle in read-only mode
@@ -77,7 +86,7 @@ function xdb_get()
     global $SETTINGS;
     global $content_dir;
     $rel_db_name = xcms_get_key_or($SETTINGS, XDB_DB_NAME, XDB_DEFAULT_DB_NAME);
-    $db_type = xcms_get_key_or($SETTINGS, XDB_DB_TYPE, XDB_DEFAULT_DB_TYPE);
+    $db_type = xdb_get_type();
     if ($db_type == XDB_DB_TYPE_SQLITE3) {
         $db_name = $content_dir.$rel_db_name;
         $db = new SQlite3($db_name, SQLITE3_OPEN_READONLY);
@@ -93,15 +102,14 @@ function xdb_get()
 
 /**
   * Obtains database handle in writeable mode
-  * @return db handle
+  * @return db database handle
   **/
 function xdb_get_write()
 {
     global $SETTINGS;
     global $content_dir;
     $rel_db_name = xcms_get_key_or($SETTINGS, XDB_DB_NAME, XDB_DEFAULT_DB_NAME);
-    $db_type = xcms_get_key_or($SETTINGS, XDB_DB_TYPE, XDB_DEFAULT_DB_TYPE);
-    if ($db_type == XDB_DB_TYPE_SQLITE3) {
+    if (xdb_get_type() == XDB_DB_TYPE_SQLITE3) {
         $db_name = $content_dir.$rel_db_name;
         xcms_log(XLOG_INFO, "[DB] Obtaining db write lock");
         return new SQlite3($db_name, SQLITE3_OPEN_READWRITE);
@@ -111,11 +119,28 @@ function xdb_get_write()
     }
 }
 
+/**
+ * Close existing database connection
+ * @param db existing database connection
+ **/
+function xdb_close($db)
+{
+    xcms_log(XLOG_INFO, "[DB] Closing database");
+    if (xdb_get_type() == XDB_DB_TYPE_SQLITE3) {
+        $db->close();
+    } else {
+        pg_close($db);
+    }
+}
+
+/**
+ * Execute arbitrary statement (string)
+ * @param db existing database connection
+ * @param query query string, properly escaped and well-formed
+ **/
 function xdb_query($db, $query)
 {
-    global $SETTINGS;
-    $db_type = xcms_get_key_or($SETTINGS, XDB_DB_TYPE, XDB_DEFAULT_DB_TYPE);
-    if ($db_type == XDB_DB_TYPE_SQLITE3) {
+    if (xdb_get_type()  == XDB_DB_TYPE_SQLITE3) {
         return $db->query($query);
     } else {
         return pg_query($db, $query);
@@ -185,6 +210,8 @@ function xdb_insert_ai(
     $use_ai = XDB_USE_AI,
     $outer_db = null
 ) {
+    $db_type = xdb_get_type();
+
     $db = null;
     if ($outer_db === null) {
         $db = xdb_get_write();
@@ -214,18 +241,29 @@ function xdb_insert_ai(
     $values = substr($values, 0, strlen($values) - 2);
 
     $query = "INSERT INTO $table_name ($keys) VALUES ($values)";
-    $result = $db->exec($query);
-    if ($result) {
-        $result = $db->lastInsertRowid();
-        xcms_log(XLOG_INFO, "[DB] $query");
+    if ($db_type == XDB_DB_TYPE_PG) {
+        $query = "$query RETURNING $pk_name";
+    }
+    $result = null;
+    $resource = xdb_query($db, $query);
+    if ($resource) {
+        if ($db_type == XDB_DB_TYPE_SQLITE3) {
+            $result = $db->lastInsertRowid();
+        } else {
+            $result = pg_fetch_assoc($resource)[$pk_name];
+        }
+        xcms_log(XLOG_INFO, "[DB] $query [OUT $result]");
     } else {
         $result = false;
-        $error_message = $db->lastErrorMsg();
+        if ($db_type == XDB_DB_TYPE_SQLITE3) {
+            $error_message = $db->lastErrorMsg();
+        } else {
+            $error_message = pg_last_error($db);
+        }
         xcms_log(XLOG_ERROR, "[DB] $query. Error: $error_message");
     }
     if ($outer_db === null) {
-        xcms_log(XLOG_INFO, "[DB] Close inner db (AI)");
-        $db->close();
+        xdb_close($db);
     }
     return $result;
 }
@@ -300,8 +338,7 @@ function xdb_update(
         xcms_log(XLOG_ERROR, "[DB] $query. Error: $error_message");
     }
     if ($outer_db === null) {
-        xcms_log(XLOG_INFO, "[DB] Close inner db");
-        $db->close();
+        xdb_close($db);
     }
     return $result ? true : false;
 }
@@ -351,7 +388,7 @@ function xdb_get_entity_by_id($table_name, $id, $string_key = false)
             );
             return array();
         }
-        $db->close();
+        xdb_close($db);
     } else {
         // new record
         $ev = array(
@@ -407,10 +444,10 @@ function xdb_get_filtered($table_name, $keys)
             XLOG_WARNING,
             "[DB] No entries from '$table_name' with keys: '$keys'. Query: $query. Last error: $error_message"
         );
-        $db->close();
+        xdb_close($db);
         return array();
     }
-    $db->close();
+    xdb_close($db);
     return $ev;
 }
 
@@ -440,7 +477,7 @@ function xdb_delete($table_name, $key_value, $outer_db = null)
         xcms_log(XLOG_ERROR, "[DB] $query");
     }
     if ($outer_db === null) {
-        $db->close();
+        xdb_close($db);
     }
     return $result;
 }
@@ -517,7 +554,7 @@ function xdb_get_table($table_name, $filter = '', $order = '')
     while ($obj = $sel->fetchArray(SQLITE3_ASSOC)) {
         $ans[] = $obj;
     }
-    $db->close();
+    xdb_close($db);
     return $ans;
 }
 
@@ -588,6 +625,8 @@ function xdb_unit_test()
 {
     $db = xdb_get();
     xdb_query($db, "SELECT * FROM department");
+    $values = array("department_title"=>"test");
+    xdb_insert_ai("department", "department_id", $values, $values);
 }
 
 /**
