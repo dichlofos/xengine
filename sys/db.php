@@ -78,6 +78,18 @@ function xdb_get_type()
     return xcms_get_key_or($SETTINGS, XDB_DB_TYPE, XDB_DEFAULT_DB_TYPE);
 }
 
+
+function xdb_get_pg($rel_db_name)
+{
+    global $XDB_CONNECTION;
+    if ($XDB_CONNECTION) {
+        return $XDB_CONNECTION;
+    }
+    $XDB_CONNECTION = pg_connect($rel_db_name);
+    return $XDB_CONNECTION;
+}
+
+
 /**
   * Obtains database handle in read-only mode
   **/
@@ -94,8 +106,7 @@ function xdb_get()
         $db->createFunction('LIKE', 'xdb_like', 2);
         return $db;
     } else {
-        $db = pg_connect($rel_db_name);
-        return $db;
+        return xdb_get_pg($rel_db_name);
     }
 }
 
@@ -114,8 +125,7 @@ function xdb_get_write()
         xcms_log(XLOG_INFO, "[DB] Obtaining db write lock");
         return new SQlite3($db_name, SQLITE3_OPEN_READWRITE);
     } else {
-        $db = pg_connect($rel_db_name);
-        return $db;
+        return xdb_get_pg($rel_db_name);
     }
 }
 
@@ -129,7 +139,7 @@ function xdb_close($db)
     if (xdb_get_type() == XDB_DB_TYPE_SQLITE3) {
         $db->close();
     } else {
-        pg_close($db);
+        // pg_close($db);
     }
 }
 
@@ -144,6 +154,19 @@ function xdb_query($db, $query)
         return $db->query($query);
     } else {
         return pg_query($db, $query);
+    }
+}
+
+
+/**
+ * Fetch one row from selector
+ **/
+function xdb_fetch($selector)
+{
+    if (xdb_get_type()  == XDB_DB_TYPE_SQLITE3) {
+        return $selector->fetchArray(SQLITE3_ASSOC);
+    } else {
+        return pg_fetch_assoc($selector);
     }
 }
 
@@ -242,15 +265,16 @@ function xdb_insert_ai(
 
     $query = "INSERT INTO $table_name ($keys) VALUES ($values)";
     if ($db_type == XDB_DB_TYPE_PG) {
+        // last_inserted_id replacement for pg
         $query = "$query RETURNING $pk_name";
     }
     $result = null;
-    $resource = xdb_query($db, $query);
-    if ($resource) {
+    $selector = xdb_query($db, $query);
+    if ($selector) {
         if ($db_type == XDB_DB_TYPE_SQLITE3) {
             $result = $db->lastInsertRowid();
         } else {
-            $result = pg_fetch_assoc($resource)[$pk_name];
+            $result = pg_fetch_assoc($selector)[$pk_name];
         }
         xcms_log(XLOG_INFO, "[DB] $query [OUT $result]");
     } else {
@@ -623,10 +647,45 @@ function xdb_vacuum($db)
 
 function xdb_unit_test()
 {
-    $db = xdb_get();
-    xdb_query($db, "SELECT * FROM department");
-    $values = array("department_title"=>"test");
-    xdb_insert_ai("department", "department_id", $values, $values);
+    xut_begin("db");
+
+    $db = xdb_get_write();
+
+    // clean all test tables
+    $cleanup_query = "DROP TABLE IF EXISTS test";
+    xdb_query($db, $cleanup_query);
+
+    // create tables
+    $create_table_query = "CREATE TABLE test (
+        test_id serial primary key,
+        test_title text,
+        test_created text,
+        test_modified text,
+        test_changedby text
+    )";
+    xdb_query($db, $create_table_query);
+
+    // test select from empty table
+    $selected = false;
+    $selector = xdb_query($db, "SELECT * FROM test");
+    while ($test_object = xdb_fetch($selector)) {
+        $selected = true;
+    }
+    xut_check(!$selected, "Table should be empty. ");
+
+    // test autoincrement insertion
+    $values = array("test_title"=>"test1 title");
+    $result = xdb_insert_ai("test", "test_id", $values, $values);
+    xut_equal("$result", "1", "Inserted ID should be 1. ");
+
+    // refresh selector
+    $selected = false;
+    $selector = xdb_query($db, "SELECT * FROM test");
+    while ($test_object = xdb_fetch($selector)) {
+        $selected = true;
+    }
+    xut_check($selected, "Table should not be empty. ");
+    xut_end();
 }
 
 /**
@@ -641,4 +700,3 @@ function xdb_debug_area($query, $enabled = XDB_DEBUG_AREA_ENABLED)
     ?><textarea rows="5" cols="120" style="display: <?php echo ($enabled ? "" : "none"); ?>;"
         id="person-query-debug"><?php echo $query; ?></textarea><?php
 }
-
