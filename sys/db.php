@@ -143,6 +143,16 @@ function xdb_close($db)
     }
 }
 
+
+function xdb_last_error($db)
+{
+    if (xdb_get_type() == XDB_DB_TYPE_SQLITE3) {
+        return $db->lastErrorMsg();
+    } else {
+        return pg_last_error($db);
+    }
+}
+
 /**
  * Execute arbitrary statement (string)
  * @param db existing database connection
@@ -403,9 +413,10 @@ function xdb_get_entity_by_id($table_name, $id, $string_key = false)
         }
 
         $query = "SELECT * FROM $table_name WHERE $key_name = $id";
-        $sel = $db->query($query);
-        if (!($ev = $sel->fetchArray(SQLITE3_ASSOC))) {
-            $error_message = $db->lastErrorMsg();
+        $sel = xdb_query($db, $query);
+        if (!($ev = xdb_fetch($sel))) {
+            // FIXME(mvel): last error call
+            $error_message = xdb_last_error($db);
             xcms_log(
                 XLOG_WARNING,
                 "[DB] No entity from '$table_name' with id: '$id'. Query: $query. Error: $error_message"
