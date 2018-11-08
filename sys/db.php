@@ -61,6 +61,27 @@ function xdb_quote($db, $value)
     }
 }
 
+
+function xdb_true()
+{
+    if (xdb_get_type() == XDB_DB_TYPE_SQLITE3) {
+        return " (1) ";
+    } else {
+        return " true ";
+    }
+}
+
+
+function xdb_false()
+{
+    if (xdb_get_type() == XDB_DB_TYPE_SQLITE3) {
+        return " (0) ";
+    } else {
+        return " false ";
+    }
+}
+
+
 /**
   * Helper for obtaining enum values from request. Filters all
   * invalid characters from input.
@@ -584,9 +605,9 @@ function xdb_get_table($table_name, $filter = '', $order = '')
     if (strlen($order)) {
         $query .= " ORDER BY $order ";
     }
-    $sel = $db->query($query);
+    $sel = xdb_query($db, $query);
     $ans = array();
-    while ($obj = $sel->fetchArray(SQLITE3_ASSOC)) {
+    while ($obj = xdb_fetch($sel)) {
         $ans[] = $obj;
     }
     xdb_close($db);
