@@ -215,16 +215,25 @@ function xdb_fetch($selector)
   **/
 function xdb_insert_or_update($table_name, $primary_keys, $values, $allowed_keys, $outer_db = null)
 {
-    $insert = false;
+    $autoincrement = false;
+    $pk_name = null;
+    // detect autoincrement key
     foreach ($primary_keys as $key => $value) {
         if ($value == XDB_NEW) {
-            $insert = true;
+            // autoincrement detected, key should be unuque
+            $autoincrement = true;
+            $pk_name = $key;
+            // in case of autoincrement keys, $primary_keys should be one-element
+            if (count($primary_keys) != 1) {
+                xcms_log(XLOG_ERROR, "Autoincremented key array should be one-element");
+                throw new Exception("Autoincremented key array should be one-element for $table_name");
+            }
         }
     }
-    if ($insert) {
+    if ($autoincrement) {
         return xdb_insert_ai(
             $table_name,
-            $primary_keys,
+            $pk_name,
             $values,
             $allowed_keys,
             XDB_OVERRIDE_TS,
@@ -264,6 +273,9 @@ function xdb_insert_ai(
     $use_ai = XDB_USE_AI,
     $outer_db = null
 ) {
+    if (is_array($pk_name)) {
+        throw new Exception("xdb_insert_ai supports only string PKs. ");
+    }
     $db_type = xdb_get_type();
 
     $db = null;
