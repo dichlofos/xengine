@@ -135,8 +135,9 @@ function xcms_uuid()
   **/
 function xcms_datetime($timestamp = false)
 {
-    if ($timestamp === false)
+    if ($timestamp === false) {
         return date("Y-m-d H:i:s");
+    }
     if (xu_empty($timestamp))
         return "";
     return date("Y-m-d H:i:s", $timestamp);
