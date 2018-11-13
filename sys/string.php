@@ -42,8 +42,8 @@ function xcms_get_key_or($list, $key, $def_value = '')
     if (!array_key_exists($key, $list))
         return $def_value;
     $value = $list[$key];
-    // special case for bool vars
-    if (is_bool($def_value) || is_array($value))
+    // special case for bool vars and null values (for DB operations)
+    if (is_bool($def_value) || is_array($value) || $value === null)
         return $value;
 
     if (!strlen($value))
