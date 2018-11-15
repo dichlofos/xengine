@@ -300,7 +300,11 @@ function xdb_insert_ai(
             continue; // skip autoincremented keys
         }
         $keys .= "$key, ";
-        $value = xdb_quote($db, $value);
+        if ($value === null) {
+            $value = "NULL";
+        } else {
+            $value = xdb_quote($db, $value);
+        }
         $values .= "$value, ";
     }
     $keys = substr($keys, 0, strlen($keys) - 2);
@@ -397,7 +401,7 @@ function xdb_update(
     }
     $cond = substr($cond, 0, strlen($cond) - 5);
     $query = "UPDATE $table_name SET $values WHERE $cond";
-    $result = $db->exec($query);
+    $result = xdb_query($db, $query);
     if ($result) {
         xcms_log(XLOG_INFO, "[DB] $query");
     } else {
@@ -504,8 +508,8 @@ function xdb_get_filtered($table_name, $keys)
     foreach ($keys as $key => $value) {
         $filter = "$filter AND $key=\"$value\"";
     }
-    $query = "SELECT * FROM $table_name WHERE $filter;";
-    $sel = $db->query($query);
+    $query = "SELECT * FROM $table_name WHERE $filter";
+    $sel = xdb_query($db, $query);
     if (!($ev = resultSetToArray($sel))) {
         $error_message = $db->lastErrorMsg();
         xcms_log(
@@ -538,7 +542,7 @@ function xdb_delete($table_name, $key_value, $outer_db = null)
     $key_value = xdb_quote($db, $key_value);
     $cond = "${table_name}_id = $key_value";
     $query = "DELETE FROM $table_name WHERE $cond";
-    $result = $db->exec($query);
+    $result = xdb_query($db, $query);
     if ($result) {
         xcms_log(XLOG_INFO, "[DB] $query");
     } else {
@@ -657,14 +661,14 @@ function xdb_open_db_write($db_name)
 function xdb_get_selector($db, $table_name)
 {
     $query = "SELECT * FROM $table_name";
-    return $db->query($query);
+    return xdb_query($db, $query);
 }
 
 
 function xdb_drop_column($db, $table_name, $column_name, $create_table)
 {
     // create new table
-    $db->exec($create_table);
+    xdb_query($db, $create_table);
     // copy data
     $sel = xdb_get_selector($db, $table_name);
     $objects = 0;
@@ -677,15 +681,15 @@ function xdb_drop_column($db, $table_name, $column_name, $create_table)
     }
 
     // rename table
-    $db->exec("DROP TABLE $table_name");
-    $db->exec("ALTER TABLE ${table_name}_new RENAME TO $table_name");
+    xdb_query($db, "DROP TABLE $table_name");
+    xdb_query($db, "ALTER TABLE ${table_name}_new RENAME TO $table_name");
     xcms_log(XLOG_INFO, "[DB] Dropped $column_name from $table_name, processed $objects objects");
 }
 
 
 function xdb_vacuum($db)
 {
-    $db->exec("VACUUM");
+    xdb_query($db, "VACUUM");
     xcms_log(XLOG_INFO, "[DB] Database vacuumed");
 }
 
@@ -700,11 +704,12 @@ function xdb_unit_test()
     xdb_query($db, $cleanup_query);
 
     // create tables
+    // FIXME: sqlite
     $create_table_query = "CREATE TABLE test (
         test_id serial primary key,
         test_title text,
-        test_created text,
-        test_modified text,
+        test_created timestamp with time zone DEFAULT now(),
+        test_modified timestamp with time zone DEFAULT now(),
         test_changedby text
     )";
     xdb_query($db, $create_table_query);
