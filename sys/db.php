@@ -288,8 +288,13 @@ function xdb_insert_ai(
     $values = "";
 
     if ($override_ts) {
-        $keys_values["${table_name}_created"] = xcms_datetime();
-        $keys_values["${table_name}_modified"] = '';
+        if ($db_type == XDB_DB_TYPE_PG) {
+            $keys_values["${table_name}_created"] = xcms_datetime()."+03";
+            $keys_values["${table_name}_modified"] = null;
+        } else {
+            $keys_values["${table_name}_created"] = xcms_datetime();
+            $keys_values["${table_name}_modified"] = "";
+        }
     }
     // for audit purposes
     $keys_values["${table_name}_changedby"] = xcms_user()->login();
@@ -734,6 +739,20 @@ function xdb_unit_test()
         $selected = true;
     }
     xut_check($selected, "Table should not be empty. ");
+
+    $selector = xdb_query($db, "DELETE FROM test");
+    $keys_values = array(
+        "test_title" => "override_ts",
+        "test_created" => "2018-01-02 03:04:05+03",
+        "test_modified" => "2018-01-02 03:04:05+03",
+    );
+    xdb_insert_ai("test", "test_id", $keys_values, $keys_values);
+    $keys_values = array(
+        "test_title" => "no_override_ts",
+        "test_created" => "2018-01-02 03:04:05+03",
+        "test_modified" => "2018-01-02 03:04:05+03",
+    );
+    xdb_insert_ai("test", "test_id", $keys_values, $keys_values, XDB_NO_OVERRIDE_TS);
     xut_end();
 }
 
