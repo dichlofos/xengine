@@ -701,6 +701,7 @@ function xdb_vacuum($db)
 function xdb_unit_test()
 {
     xut_begin("db");
+    $db_type = xdb_get_type();
 
     $db = xdb_get_write();
 
@@ -741,18 +742,42 @@ function xdb_unit_test()
     xut_check($selected, "Table should not be empty. ");
 
     $selector = xdb_query($db, "DELETE FROM test");
-    $keys_values = array(
+    $tz_offset = ($db_type == XDB_DB_TYPE_PG) ? "+03" : "";
+    $keys_values_override_ts = array(
         "test_title" => "override_ts",
-        "test_created" => "2018-01-02 03:04:05+03",
-        "test_modified" => "2018-01-02 03:04:05+03",
+        "test_created" => "2018-01-02 03:04:05$$tz_offset",
+        "test_modified" => "2018-01-02 03:04:05$tz_offset",
     );
-    xdb_insert_ai("test", "test_id", $keys_values, $keys_values);
-    $keys_values = array(
+    xdb_insert_ai("test", "test_id", $keys_values_override_ts, $keys_values_override_ts);
+
+    $keys_values_no_override_ts = array(
         "test_title" => "no_override_ts",
-        "test_created" => "2018-01-02 03:04:05+03",
-        "test_modified" => "2018-01-02 03:04:05+03",
+        "test_created" => "2018-01-02 03:04:05$tz_offset",
+        "test_modified" => "2018-01-02 03:04:05$tz_offset",
     );
-    xdb_insert_ai("test", "test_id", $keys_values, $keys_values, XDB_NO_OVERRIDE_TS);
+    xdb_insert_ai("test", "test_id", $keys_values_no_override_ts, $keys_values_no_override_ts, XDB_NO_OVERRIDE_TS);
+
+    $selector = xdb_query($db, "SELECT * FROM test");
+    $selected_data = array();
+    while ($test_object = xdb_fetch($selector)) {
+        if ($test_object["test_title"] == "override_ts") {
+            xut_check(
+                $test_object["test_created"] != $keys_values_override_ts["test_created"],
+                "Override should override creation ts"
+            );
+        }
+        if ($test_object["test_title"] == "no_override_ts") {
+            xut_equal(
+                $test_object["test_created"],
+                $keys_values_no_override_ts["test_created"],
+                "NoOverrideTs should not override creation timestamp"
+            );
+        }
+        $selected_data[] = $test_object;
+        //print_r($test_object);
+    }
+    xut_equal(count($selected_data), 2, "Invalid row count selected");
+
     xut_end();
 }
 

@@ -444,7 +444,7 @@ class XcmsUser
         // calculate root hash
         $root_user = new XcmsUser("root");
         $root_user->passwd("root");
-        echo "<pre>'root' hash: ".$root_user->param("password")."</pre>";
+        //echo "<pre>'root' hash: ".$root_user->param("password")."</pre>";
 
         xut_end();
     }
