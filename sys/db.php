@@ -181,7 +181,8 @@ function xdb_last_error($db)
  **/
 function xdb_query($db, $query)
 {
-    if (xdb_get_type()  == XDB_DB_TYPE_SQLITE3) {
+    // xcms_log(XLOG_DEBUG, "[DB] Executing query: $query");
+    if (xdb_get_type() == XDB_DB_TYPE_SQLITE3) {
         return $db->query($query);
     } else {
         return pg_query($db, $query);
@@ -710,14 +711,23 @@ function xdb_unit_test()
     xdb_query($db, $cleanup_query);
 
     // create tables
-    // FIXME: sqlite
-    $create_table_query = "CREATE TABLE test (
-        test_id serial primary key,
-        test_title text,
-        test_created timestamp with time zone DEFAULT now(),
-        test_modified timestamp with time zone DEFAULT now(),
-        test_changedby text
-    )";
+    if ($db_type == XDB_DB_TYPE_PG) {
+        $create_table_query = "CREATE TABLE test (
+            test_id serial primary key,
+            test_title text,
+            test_created timestamp with time zone DEFAULT now(),
+            test_modified timestamp with time zone DEFAULT now(),
+            test_changedby text
+        )";
+    } else {
+        $create_table_query = "CREATE TABLE test (
+            test_id integer primary key autoincrement,
+            test_title text,
+            test_created text,
+            test_modified text,
+            test_changedby text
+        )";
+    }
     xdb_query($db, $create_table_query);
 
     // test select from empty table
