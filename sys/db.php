@@ -181,7 +181,7 @@ function xdb_last_error($db)
  **/
 function xdb_query($db, $query)
 {
-    // xcms_log(XLOG_DEBUG, "[DB] Executing query: $query");
+    xcms_log(XLOG_INFO, "[DB] Executing query: $query");
     if (xdb_get_type() == XDB_DB_TYPE_SQLITE3) {
         return $db->query($query);
     } else {
@@ -195,7 +195,7 @@ function xdb_query($db, $query)
  **/
 function xdb_fetch($selector)
 {
-    if (xdb_get_type()  == XDB_DB_TYPE_SQLITE3) {
+    if (xdb_get_type() == XDB_DB_TYPE_SQLITE3) {
         return $selector->fetchArray(SQLITE3_ASSOC);
     } else {
         return pg_fetch_assoc($selector);
