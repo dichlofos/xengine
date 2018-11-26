@@ -219,19 +219,23 @@
         // it is essential to open DB in write mode to lock it
         $db = xdb_get_write();
         $query = "SELECT * FROM notification WHERE mail_group = '$mail_group' ORDER BY notification_id DESC";
-        $notification_sel = $db->query($query);
+        $notification_sel = xdb_query($db, $query);
         $notification_body = "";
-        while ($notification = $notification_sel->fetchArray(SQLITE3_ASSOC))
+        while ($notification = $notification_sel->fetchArray(SQLITE3_ASSOC)) {
             $notification_body .= $notification['notification_html'];
-        if (xu_empty($notification_body)) // nothing was added
+        }
+        if (xu_empty($notification_body)) {
+            // nothing was added
             return true;
+        }
 
-        if (!xcms_deliver_mail_int($mail_group, null, $notification_body))
+        if (!xcms_deliver_mail_int($mail_group, null, $notification_body)) {
             return false;
+        }
 
         // purge notifications in case of success
         $del_query = "DELETE FROM notification WHERE mail_group = '$mail_group'";
-        $db->query($del_query);
+        xdb_query($db, $del_query);
 
         return true;
     }

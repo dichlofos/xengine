@@ -568,7 +568,7 @@ function xdb_delete($table_name, $key_value, $outer_db = null)
   **/
 function xdb_fetch_one($db, $query)
 {
-    $sel = $db->query($query);
+    $sel = xdb_query($db, $query);
     if (!($obj = $sel->fetchArray(SQLITE3_ASSOC))) {
         $error_message = $db->lastErrorMsg();
         xcms_log(XLOG_WARNING, "[DB] No objects fetched using query: $query. Last error: $error_message");
