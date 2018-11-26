@@ -332,11 +332,7 @@ function xdb_insert_ai(
         xcms_log(XLOG_INFO, "[DB] $query [OUT $result]");
     } else {
         $result = false;
-        if ($db_type == XDB_DB_TYPE_SQLITE3) {
-            $error_message = $db->lastErrorMsg();
-        } else {
-            $error_message = pg_last_error($db);
-        }
+        $error_message = xdb_last_error($db);
         xcms_log(XLOG_ERROR, "[DB] $query. Error: $error_message");
     }
     if ($outer_db === null) {
@@ -411,7 +407,7 @@ function xdb_update(
     if ($result) {
         xcms_log(XLOG_INFO, "[DB] $query");
     } else {
-        $error_message = $db->lastErrorMsg();
+        $error_message = xdb_last_error($db);
         xcms_log(XLOG_ERROR, "[DB] $query. Error: $error_message");
     }
     if ($outer_db === null) {
@@ -476,20 +472,21 @@ function xdb_get_entity_by_id($table_name, $id, $string_key = false)
     return $ev;
 }
 
-// FIXME(mvel): fix style and tell Yarik
-function query_length($query)
+// FIXME(mvel): get rid of this function, replace with SELECT COUNT(*)
+function xdb_query_length($selector)
 {
-    $tmp = $query;
+    $selector_copy = $selector;
     $count = 0;
-    if (!$tmp) {
+    if (!$selector_copy) {
         return 0;
     }
-    while ($tmp->fetchArray()) {
+    while (xdb_fetch($selector_copy)) {
         ++$count;
     }
     return $count;
 }
 
+// FIXME(mvel): fix style and tell Yarik
 function resultSetToArray($queryResultSet)
 {
     $multiArray = array();
@@ -497,7 +494,7 @@ function resultSetToArray($queryResultSet)
     if (!$queryResultSet) {
         return array();
     }
-    while ($row = $queryResultSet->fetchArray(SQLITE3_ASSOC)) {
+    while ($row = xdb_fetch($queryResultSet)) {
         foreach ($row as $i => $value) {
             $multiArray[$count][$i] = $value;
         }
@@ -517,7 +514,7 @@ function xdb_get_filtered($table_name, $keys)
     $query = "SELECT * FROM $table_name WHERE $filter";
     $sel = xdb_query($db, $query);
     if (!($ev = resultSetToArray($sel))) {
-        $error_message = $db->lastErrorMsg();
+        $error_message = xdb_last_error($db);
         xcms_log(
             XLOG_WARNING,
             "[DB] No entries from '$table_name' with keys: '$keys'. Query: $query. Last error: $error_message"
@@ -569,8 +566,8 @@ function xdb_delete($table_name, $key_value, $outer_db = null)
 function xdb_fetch_one($db, $query)
 {
     $sel = xdb_query($db, $query);
-    if (!($obj = $sel->fetchArray(SQLITE3_ASSOC))) {
-        $error_message = $db->lastErrorMsg();
+    if (!($obj = xdb_fetch($sel))) {
+        $error_message = xdb_last_error($db);
         xcms_log(XLOG_WARNING, "[DB] No objects fetched using query: $query. Last error: $error_message");
         return array();
     }
@@ -678,7 +675,7 @@ function xdb_drop_column($db, $table_name, $column_name, $create_table)
     // copy data
     $sel = xdb_get_selector($db, $table_name);
     $objects = 0;
-    while ($obj = $sel->fetchArray(SQLITE3_ASSOC)) {
+    while ($obj = xdb_fetch($sel)) {
         $idn = "${table_name}_id";
         $object_id = $obj[$idn];
         unset($obj[$column_name]); // specific code

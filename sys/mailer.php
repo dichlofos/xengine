@@ -221,7 +221,7 @@
         $query = "SELECT * FROM notification WHERE mail_group = '$mail_group' ORDER BY notification_id DESC";
         $notification_sel = xdb_query($db, $query);
         $notification_body = "";
-        while ($notification = $notification_sel->fetchArray(SQLITE3_ASSOC)) {
+        while ($notification = xdb_fetch($notification_sel)) {
             $notification_body .= $notification['notification_html'];
         }
         if (xu_empty($notification_body)) {
