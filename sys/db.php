@@ -29,19 +29,26 @@ function xdb_get_idvar($key, $default_value = XDB_INVALID_ID, $allowed_values = 
     return $value;
 }
 
+
 /**
- * Proper escaping
- */
+  * Proper escaping, even for NULL values.
+  **/
 function xdb_quote($db, $value)
 {
     if (xdb_get_type() == XDB_DB_TYPE_SQLITE3) {
         return "'".$db->escapeString($value)."'";
     } else {
+        if ($value === null) {
+            return "NULL";
+        }
         return "'".pg_escape_string($db, $value)."'";
     }
 }
 
 
+/**
+  * Proper value encoding for TRUE condition
+  **/
 function xdb_true()
 {
     if (xdb_get_type() == XDB_DB_TYPE_SQLITE3) {
@@ -52,6 +59,9 @@ function xdb_true()
 }
 
 
+/**
+  * Proper value encoding for FALSE condition
+  **/
 function xdb_false()
 {
     if (xdb_get_type() == XDB_DB_TYPE_SQLITE3) {
@@ -73,13 +83,18 @@ function xdb_get_enumvar($key)
     return $value;
 }
 
+/**
+  * Obtain database type
+  **/
 function xdb_get_type()
 {
     global $SETTINGS;
     return xcms_get_key_or($SETTINGS, XDB_DB_TYPE, XDB_DEFAULT_DB_TYPE);
 }
 
-
+/**
+  * Postgress-specific DB connection creator.
+  **/
 function xdb_get_pg($rel_db_name)
 {
     global $XDB_CONNECTION;
@@ -131,9 +146,9 @@ function xdb_get_write()
 }
 
 /**
- * Close existing database connection
- * @param db existing database connection
- **/
+  * Close existing database connection
+  * @param db existing database connection
+  **/
 function xdb_close($db)
 {
     xcms_log(XLOG_INFO, "[DB] Closing database");
@@ -145,6 +160,9 @@ function xdb_close($db)
 }
 
 
+/**
+  * Obtains database last error
+  **/
 function xdb_last_error($db)
 {
     if (xdb_get_type() == XDB_DB_TYPE_SQLITE3) {
@@ -155,10 +173,10 @@ function xdb_last_error($db)
 }
 
 /**
- * Execute arbitrary statement (string)
- * @param db existing database connection
- * @param query query string, properly escaped and well-formed
- **/
+  * Execute arbitrary statement (string)
+  * @param db existing database connection
+  * @param query query string, properly escaped and well-formed
+  **/
 function xdb_query($db, $query)
 {
     xcms_log(XLOG_INFO, "[DB] Executing query: $query");
@@ -171,8 +189,8 @@ function xdb_query($db, $query)
 
 
 /**
- * Fetch one row from selector
- **/
+  * Fetch one row from selector
+  **/
 function xdb_fetch($selector)
 {
     if (xdb_get_type() == XDB_DB_TYPE_SQLITE3) {
@@ -286,12 +304,8 @@ function xdb_insert_ai(
             continue; // skip autoincremented keys
         }
         $keys .= "$key, ";
-        if ($value === null) {
-            $value = "NULL";
-        } else {
-            $value = xdb_quote($db, $value);
-        }
-        $values .= "$value, ";
+        $quoted_value = xdb_quote($db, $value);
+        $values .= "$quoted_value, ";
     }
     $keys = substr($keys, 0, strlen($keys) - 2);
     $values = substr($values, 0, strlen($values) - 2);
@@ -371,8 +385,8 @@ function xdb_update(
             continue; // skip primary keys
         }
 
-        $value = xdb_quote($db, $value);
-        $values .= "$key = $value, ";
+        $quoted_value = xdb_quote($db, $value);
+        $values .= "$key = $quoted_value, ";
     }
     $values = substr($values, 0, strlen($values) - 2);
 
