@@ -321,7 +321,8 @@ function xdb_insert_ai(
         if ($db_type == XDB_DB_TYPE_SQLITE3) {
             $result = $db->lastInsertRowid();
         } else {
-            $result = pg_fetch_assoc($selector)[$pk_name];
+            $fetched_result = pg_fetch_assoc($selector);
+            $result = $fetched_result[$pk_name];
         }
         xcms_log(XLOG_INFO, "[DB] $query [OUT $result]");
     } else {
